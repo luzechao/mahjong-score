@@ -8,6 +8,7 @@ import { writable, derived, get } from "svelte/store";
 import type { Locale, Translations } from "./types";
 import { en } from "./en";
 import { ja } from "./ja";
+import { zhCN } from "./zh-CN";
 
 // Mapping from backend yaku names to translation keys
 // These must match exactly what agari-wasm/src/lib.rs yaku_name() returns
@@ -76,7 +77,7 @@ export const scoreLevelMap: Record<string, keyof Translations> = {
 const LOCALE_STORAGE_KEY = "agari-locale";
 
 // Available translations
-const translations: Record<Locale, Translations> = { en, ja };
+const translations: Record<Locale, Translations> = { en, ja, "zh-CN": zhCN };
 
 // Available locales with display names
 export const availableLocales: {
@@ -86,6 +87,7 @@ export const availableLocales: {
 }[] = [
   { code: "en", name: "English", nativeName: "English" },
   { code: "ja", name: "Japanese", nativeName: "日本語" },
+  { code: "zh-CN", name: "Simplified Chinese", nativeName: "简体中文" },
 ];
 
 /**
@@ -95,14 +97,21 @@ function getInitialLocale(): Locale {
   if (typeof window === "undefined") return "en";
 
   const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (stored && (stored === "en" || stored === "ja")) {
+  if (stored === "en" || stored === "ja" || stored === "zh-CN") {
     return stored;
   }
 
   // Optionally detect browser language
-  const browserLang = navigator.language.split("-")[0];
+  const browserLanguage = navigator.language.toLowerCase();
+  const browserLang = browserLanguage.split("-")[0];
   if (browserLang === "ja") {
     return "ja";
+  }
+  if (
+    browserLang === "zh" &&
+    !/(?:^|-)(?:hant|tw|hk|mo)(?:-|$)/.test(browserLanguage)
+  ) {
+    return "zh-CN";
   }
 
   return "en";
@@ -111,6 +120,12 @@ function getInitialLocale(): Locale {
 // Create the locale store
 function createLocaleStore() {
   const { subscribe, set, update } = writable<Locale>(getInitialLocale());
+
+  subscribe((currentLocale) => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = currentLocale;
+    }
+  });
 
   return {
     subscribe,

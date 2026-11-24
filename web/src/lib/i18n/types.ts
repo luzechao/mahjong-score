@@ -3,7 +3,7 @@
  * All translation keys are defined here for type safety
  */
 
-export type Locale = "en" | "ja";
+export type Locale = "en" | "ja" | "zh-CN";
 
 export interface Translations {
   // Header
@@ -21,6 +21,27 @@ export interface Translations {
   pon: string;
   openKan: string;
   closedKan: string;
+  scanHand: string;
+  scanMeld: string;
+  scanHandHelp: string;
+  scanMeldHelp: string;
+  scanPrivacy: string;
+  takePhoto: string;
+  choosePhoto: string;
+  recognizing: string;
+  recognitionFailed: string;
+  noTilesDetected: string;
+  reviewTiles: string;
+  unknownTile: string;
+  addMissingTile: string;
+  removeDetectedTile: string;
+  applyScan: string;
+  scanEmpty: string;
+  scanUnknown: string;
+  scanTooMany: string;
+  scanUnavailable: string;
+  scanSanma: string;
+  scanInvalidMeld: string;
 
   // Meld builder
   buildingChi: string;

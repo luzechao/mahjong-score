@@ -17,6 +17,8 @@
     import DoraPicker from "./lib/components/DoraPicker.svelte";
     import LanguageSwitcher from "./lib/components/LanguageSwitcher.svelte";
     import TileThemeSwitcher from "./lib/components/TileThemeSwitcher.svelte";
+    import TileScanner from "./lib/components/TileScanner.svelte";
+    import { validateScan, type ScanError } from "./lib/scanValidation";
     import {
         serializeToUrl,
         deserializeFromUrl,
@@ -53,6 +55,7 @@
     let melds = $state<Meld[]>([]);
     let nextMeldId = $state(0);
     let showMeldBuilder = $state(false);
+    let scanTarget = $state<"hand" | "meld" | null>(null);
     let meldBuilderType = $state<"chi" | "pon" | "kan" | "ankan">("pon");
     let meldBuilderTiles = $state<TileEntry[]>([]);
 
@@ -358,6 +361,7 @@
 
     // Meld builder functions
     function startMeldBuilder(type: "chi" | "pon" | "kan" | "ankan") {
+        scanTarget = null;
         meldBuilderType = type;
         meldBuilderTiles = [];
         showMeldBuilder = true;
@@ -514,14 +518,51 @@
                 id: nextMeldId++,
             },
         ];
+        scanTarget = null;
         showMeldBuilder = false;
         meldBuilderTiles = [];
+        scoreResult = null;
+        scoreError = null;
         recalculateShanten();
     }
 
     function cancelMeldBuilder() {
+        scanTarget = null;
         showMeldBuilder = false;
         meldBuilderTiles = [];
+    }
+
+    function applyScannedTiles(labels: string[]): ScanError | null {
+        if (!scanTarget) return "unknown";
+        const remaining = { ...tileCounts };
+        const replaced = scanTarget === "hand" ? handTiles : meldBuilderTiles;
+        for (const entry of replaced) {
+            remaining[entry.tile]++;
+            if (entry.isRed) remaining[`red${entry.tile}`]++;
+        }
+        remaining["4z"] -= nukidora;
+        const maximum = scanTarget === "hand"
+            ? maxHandTiles
+            : meldBuilderType === "kan" || meldBuilderType === "ankan" ? 4 : 3;
+        const result = validateScan(
+            labels,
+            remaining,
+            maximum,
+            isSanma,
+            scanTarget === "meld" ? meldBuilderType : undefined,
+        );
+        if (result.error) return result.error;
+        const entries = result.tiles.map((entry) => ({ ...entry, id: nextTileId++ }));
+        if (scanTarget === "hand") {
+            handTiles = entries;
+            selectedWinningTileIndex = null;
+            scoreResult = null;
+            scoreError = null;
+            recalculateShanten();
+        } else {
+            meldBuilderTiles = entries;
+        }
+        return null;
     }
 
     function removeMeld(index: number) {
@@ -569,6 +610,7 @@
 
     // Clear hand
     function clearHand() {
+        scanTarget = null;
         handTiles = [];
         melds = [];
         doraIndicators = [];
@@ -891,6 +933,13 @@
                             <div class="header-actions">
                                 <button
                                     class="btn btn-secondary"
+                                    onclick={() => (scanTarget = "hand")}
+                                    disabled={showMeldBuilder || scanTarget !== null}
+                                >
+                                    {$t.scanHand}
+                                </button>
+                                <button
+                                    class="btn btn-secondary"
                                     onclick={shareHand}
                                     disabled={handTiles.length === 0}
                                 >
@@ -904,6 +953,10 @@
                                 </button>
                             </div>
                         </div>
+
+                        {#if scanTarget === "hand"}
+                            <TileScanner target="hand" onApply={applyScannedTiles} onClose={() => (scanTarget = null)} />
+                        {/if}
 
                         <!-- Tile Palette -->
                         <TilePalette
@@ -980,6 +1033,11 @@
                                 <div class="meld-builder-actions">
                                     <button
                                         class="btn btn-sm btn-secondary"
+                                        onclick={() => (scanTarget = "meld")}
+                                        disabled={scanTarget !== null}
+                                    >{$t.scanMeld}</button>
+                                    <button
+                                        class="btn btn-sm btn-secondary"
                                         onclick={cancelMeldBuilder}
                                         >{$t.cancel}</button
                                     >
@@ -995,6 +1053,9 @@
                                         {$t.confirmAddMeld}
                                     </button>
                                 </div>
+                                {#if scanTarget === "meld"}
+                                    <TileScanner target="meld" onApply={applyScannedTiles} onClose={() => (scanTarget = null)} />
+                                {/if}
                             </div>
                         {/if}
                     </div>

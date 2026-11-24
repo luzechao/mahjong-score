@@ -137,7 +137,7 @@
               onclick={() => { roundWind = wind; onChange(); }}
               title={windNames[wind]}
             >
-              {windSymbols[wind]}
+              {$locale === 'zh-CN' ? windNames[wind] : windSymbols[wind]}
             </button>
           {/each}
         </div>
@@ -153,7 +153,7 @@
               onclick={() => { seatWind = wind; onChange(); }}
               title={windNames[wind]}
             >
-              {windSymbols[wind]}
+              {$locale === 'zh-CN' ? windNames[wind] : windSymbols[wind]}
             </button>
           {/each}
         </div>
@@ -278,7 +278,7 @@
           onchange={onChange}
         />
         <span class="checkbox-label">{$t.tenhou}</span>
-        <span class="han-indicator yakuman">役満</span>
+        <span class="han-indicator yakuman">{$locale === 'zh-CN' ? $t.scoreLevelYakuman : '役満'}</span>
       </label>
       <label class="checkbox-item" class:disabled={isDealer || !isTsumo}>
         <input
@@ -288,7 +288,7 @@
           onchange={onChange}
         />
         <span class="checkbox-label">{$t.chiihou}</span>
-        <span class="han-indicator yakuman">役満</span>
+        <span class="han-indicator yakuman">{$locale === 'zh-CN' ? $t.scoreLevelYakuman : '役満'}</span>
       </label>
     </div>
   </div>
